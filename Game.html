@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progressive Game</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        #background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+        }
+        #me, #exit, #decorationA, #decorationB, #decorationC {
+            position: absolute;
+            display: inline-block;
+            width: 100px;
+            height: 100px;
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="background"></div>
+        <div id="decorationA"></div>
+        <div id="decorationB"></div>
+        <div id="decorationC"></div>
+        <div id="exit"></div>
+        <div id="me"></div>		
+    </div>
+
+    <script>
+        let gameContainer = document.getElementById('game-container');
+        let background = document.getElementById('background');
+        let me = document.getElementById('me');
+		let decorationA = document.getElementById('decorationA');
+		let decorationB = document.getElementById('decorationB');
+		let decorationC = document.getElementById('decorationC');
+        let exit = document.getElementById('exit');
+		let facingDirection = 'right'; // Default direction is right
+
+        let currentLevel = 1; // Start at level 1
+        let mePosition = { x: 100, y: 100 }; // Initial position
+		
+		// Function to calculate distance between me and exit
+		function distanceCheck(mePosition, exitPosition) {
+			const dx = mePosition.x - exitPosition.x;
+			const dy = mePosition.y - exitPosition.y;
+			return Math.sqrt(dx * dx + dy * dy);
+		}
+
+        function loadLevel(level) {
+            // Check if the necessary images for the level exist
+            const mapSrc = `map${level}.png`;
+            const exitSrc = `exit${level}.png`;
+            const meSrc = `me${level}.png`;
+			const decorationASrc = `decorationA${level}.png`;
+			const decorationBSrc = `decorationB${level}.png`;
+			const decorationCSrc = `decorationC${level}.png`;
+
+            // Preload images to verify they exist
+            const imagesToLoad = [mapSrc, exitSrc, meSrc, decorationA, decorationB, decorationC];
+            const imagesExist = imagesToLoad.every(src => {
+                const img = new Image();
+                img.src = src;
+                return img.complete || (img.naturalWidth > 0);
+            });
+
+            // Update the background and assets
+            background.style.backgroundImage = `url(${mapSrc})`;
+            exit.style.backgroundImage = `url(${exitSrc})`;
+            me.style.backgroundImage = `url(${meSrc})`;
+            decorationA.style.backgroundImage = `url(${decorationASrc})`;
+			decorationB.style.backgroundImage = `url(${decorationBSrc})`;
+			decorationC.style.backgroundImage = `url(${decorationCSrc})`;
+									
+            // Randomize the exit position
+            const exitPosition = {
+                x: Math.random() * (gameContainer.clientWidth - 100),
+                y: Math.random() * (gameContainer.clientHeight - 100),
+            };
+
+            // Randomize the decoration positions
+            const decorationAPosition = {
+                x: Math.random() * (gameContainer.clientWidth - 100),
+                y: Math.random() * (gameContainer.clientHeight - 100),
+            };
+            const decorationBPosition = {
+                x: Math.random() * (gameContainer.clientWidth - 100),
+                y: Math.random() * (gameContainer.clientHeight - 100),
+            };
+            const decorationCPosition = {
+                x: Math.random() * (gameContainer.clientWidth - 100),
+                y: Math.random() * (gameContainer.clientHeight - 100),
+            };
+
+
+            exit.style.left = `${exitPosition.x}px`;
+            exit.style.top = `${exitPosition.y}px`;
+			decorationA.style.left = `${decorationAPosition.x}px`;
+            decorationA.style.top = `${decorationAPosition.y}px`;
+			decorationB.style.left = `${decorationBPosition.x}px`;
+            decorationB.style.top = `${decorationBPosition.y}px`;
+			decorationC.style.left = `${decorationCPosition.x}px`;
+            decorationC.style.top = `${decorationCPosition.y}px`;
+
+			do {
+				mePosition = {
+					x: Math.random() * (gameContainer.clientWidth - 100),
+					y: Math.random() * (gameContainer.clientHeight - 100),
+				};
+			} while (distanceCheck(mePosition, exitPosition) < 500);
+			me.style.left = mePosition.x + 'px';
+			me.style.top = mePosition.y + 'px';
+            me.style.left = `${mePosition.x}px`;
+            me.style.top = `${mePosition.y}px`;
+
+            return true; // Level loaded successfully
+        }
+
+        function moveMe(dx, dy) {
+            mePosition.x += dx;
+            mePosition.y += dy;
+			
+			// Update facing direction and flip sprite if needed
+			if (dx > 0 && facingDirection !== 'right') {
+				facingDirection = 'right';
+				me.style.transform = 'scaleX(1)';
+				if (currentLevel==11 || currentLevel == 4) {
+					exit.style.transform = 'scaleX(1)';
+				}
+				} else if (dx < 0 && facingDirection !== 'left') {
+				facingDirection = 'left';
+				me.style.transform = 'scaleX(-1)';
+				if (currentLevel==11 || currentLevel==4) {
+					exit.style.transform = 'scaleX(-1)';
+				}
+			}
+
+            // Prevent moving out of bounds
+            mePosition.x = Math.max(0, Math.min(mePosition.x, gameContainer.clientWidth - 100));
+            mePosition.y = Math.max(0, Math.min(mePosition.y, gameContainer.clientHeight - 100));
+
+            // Update the position of "me"
+            me.style.left = `${mePosition.x}px`;
+            me.style.top = `${mePosition.y}px`;
+
+            // Check for overlap with exit
+            const meRect = me.getBoundingClientRect();
+            const exitRect = exit.getBoundingClientRect();
+            if (
+                meRect.left < exitRect.right &&
+                meRect.right > exitRect.left &&
+                meRect.top < exitRect.bottom &&
+                meRect.bottom > exitRect.top
+            ) {
+                alert("Well done! Proceeding to the next level.");
+                currentLevel++;
+                if (!loadLevel(currentLevel)) {
+                    document.removeEventListener('keydown', handleKeyDown);
+                }
+            }
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'ArrowUp') moveMe(0, -10);
+            if (e.key === 'ArrowDown') moveMe(0, 10);
+            if (e.key === 'ArrowLeft') moveMe(-10, 0);
+            if (e.key === 'ArrowRight') moveMe(10, 0);
+        }
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        // Start the game
+        if (!loadLevel(currentLevel)) {
+            alert("No levels found! Please add map1.png, exit1.png, and me1.png to start.");
+        }
+    </script>
+</body>
+</html>
